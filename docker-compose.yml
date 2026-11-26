@@ -43,16 +43,6 @@ services:
       - n8n_data:/home/node/.n8n
       - ./automatisation:/home/node/automatisation:ro
 
-  # Serveur e-mail de test (facultatif) : docker compose --profile test up -d mailpit
-  # Boîte de réception : http://localhost:8025 ; SMTP pour n8n : host.docker.internal:1025
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: cherrat_mailpit
-    profiles: ["test"]
-    ports:
-      - "8025:8025"
-      - "1025:1025"
-
 volumes:
   pgdata:
   qdrant_data:

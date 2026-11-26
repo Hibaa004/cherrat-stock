@@ -44,3 +44,35 @@ def test_sortie_fefo_et_stock_insuffisant(client, jeton_major, db):
     assert db.query(Lot).filter_by(numero_lot='A2').one().quantite == 3
     r = client.post('/stock/sortie', json={'medicament_id': amox_id, 'quantite': 4}, headers=jeton_major)
     assert r.status_code == 400
+
+
+RAPPORT = {
+    'date': '2026-01-15', 'nb_alertes': 4, 'synthese': '4 alerte(s) à traiter',
+    'actions': '- Retirer le lot S1', 'faits': 'LOTS EXPIRÉS (1)', 'source': 'ia', 'modele': 'llama3.2:3b',
+}
+
+
+def test_depot_rapport_ia_exige_la_cle(client):
+    assert client.post('/automation/rapport-ia', json=RAPPORT).status_code == 401
+
+
+def test_depot_puis_lecture_du_rapport(client, jeton_major):
+    assert client.get('/automation/dernier-rapport', headers=jeton_major).json() is None
+    r = client.post('/automation/rapport-ia', json=RAPPORT, headers={'X-API-Key': CLE})
+    assert r.status_code == 200
+    # Une deuxième exécution le même jour remplace le rapport au lieu d'en créer un autre
+    client.post('/automation/rapport-ia', json={**RAPPORT, 'source': 'repli', 'actions': ''}, headers={'X-API-Key': CLE})
+    client.post('/automation/rapport-ia', json={**RAPPORT, 'date': '2026-01-14'}, headers={'X-API-Key': CLE})
+    data = client.get('/automation/dernier-rapport', headers=jeton_major).json()
+    assert data['date'] == '2026-01-15'
+    assert data['source'] == 'repli'
+    assert data['actions'] == ''
+
+
+def test_lecture_du_rapport_exige_une_connexion(client):
+    assert client.get('/automation/dernier-rapport').status_code == 401
+
+
+def test_source_invalide_refusee(client):
+    r = client.post('/automation/rapport-ia', json={**RAPPORT, 'source': 'autre'}, headers={'X-API-Key': CLE})
+    assert r.status_code == 422

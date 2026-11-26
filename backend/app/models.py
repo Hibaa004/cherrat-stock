@@ -82,3 +82,17 @@ class Notification(Base):
     medicament_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     lue: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class RapportIA(Base):
+    """Rapport quotidien envoyé par le workflow n8n et affiché sur le tableau de bord."""
+    __tablename__ = 'rapports_ia'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    date: Mapped[dt.date] = mapped_column(Date, unique=True, index=True)
+    nb_alertes: Mapped[int] = mapped_column(Integer, default=0)
+    synthese: Mapped[str] = mapped_column(Text)
+    actions: Mapped[str] = mapped_column(Text, default='')
+    faits: Mapped[str] = mapped_column(Text, default='')
+    source: Mapped[str] = mapped_column(String(20))  # 'ia', 'repli' ou 'sans_alerte'
+    modele: Mapped[str] = mapped_column(String(60), default='')
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

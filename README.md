@@ -6,7 +6,7 @@ Application web du Centre de Santé Cherrat :
 - **Sortie FEFO** : le lot qui expire le plus tôt est utilisé en premier.
 - **Alertes** : contrôle quotidien à 8 h (APScheduler) des lots expirés, des lots qui expirent sous 30 ou 90 jours et des stocks bas. Les lots expirés ne comptent pas dans le stock utilisable.
 - **Assistant IA (chatbot RAG)** : questions en langage naturel → Qdrant + Llama (Ollama, en local).
-- **Automatisation n8n** : rapport quotidien par e-mail rédigé par l'IA → voir [automatisation/README.md](automatisation/README.md).
+- **Automatisation n8n** : chaque matin, un rapport rédigé par l'IA s'affiche sur le tableau de bord du personnel → voir [automatisation/README.md](automatisation/README.md).
 
 ## Structure
 

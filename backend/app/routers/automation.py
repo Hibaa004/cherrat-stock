@@ -1,18 +1,21 @@
-"""Point d'entrée réservé à l'automatisation n8n.
+"""Routes de l'automatisation n8n.
 
 n8n s'authentifie avec une clé d'API (en-tête X-API-Key) au lieu d'un compte
-utilisateur : la clé ne donne accès qu'à ce rapport, en lecture seule.
+utilisateur : la clé permet seulement de lire les faits du stock et de déposer
+le rapport du jour. Le personnel lit ce rapport sur le tableau de bord.
 """
 import datetime as dt
 import secrets
 
 from fastapi import APIRouter, Depends, Header, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..database import get_db
-from ..models import Lot, Medicament, Notification
+from ..deps import get_current_user
+from ..models import Lot, Medicament, Notification, RapportIA, User
 
 router = APIRouter(prefix='/automation', tags=['automatisation n8n'])
 
@@ -71,4 +74,46 @@ def rapport(db: Session = Depends(get_db)):
         'lots_sous_90j': sous_90j,
         'notifications_non_lues': list(non_lues),
         'nb_alertes': len(ruptures) + len(stock_bas) + len(expires) + len(sous_30j),
+    }
+
+
+class RapportIAIn(BaseModel):
+    date: dt.date
+    nb_alertes: int = Field(ge=0)
+    synthese: str = Field(min_length=1, max_length=2000)
+    actions: str = Field(default='', max_length=5000)
+    faits: str = Field(default='', max_length=20000)
+    source: str = Field(pattern='^(ia|repli|sans_alerte)$')
+    modele: str = Field(default='', max_length=60)
+
+
+@router.post('/rapport-ia', dependencies=[Depends(verifier_cle)])
+def deposer_rapport(body: RapportIAIn, db: Session = Depends(get_db)):
+    """Appelé par n8n : un rapport par jour (une nouvelle exécution le remplace)."""
+    rapport_ = db.scalar(select(RapportIA).where(RapportIA.date == body.date))
+    if rapport_ is None:
+        rapport_ = RapportIA(date=body.date)
+        db.add(rapport_)
+    for champ, valeur in body.model_dump().items():
+        setattr(rapport_, champ, valeur)
+    db.commit()
+    return {'id': rapport_.id, 'message': 'Rapport enregistré'}
+
+
+@router.get('/dernier-rapport')
+def dernier_rapport(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Lu par le tableau de bord du personnel (tous les rôles)."""
+    r = db.scalar(select(RapportIA).order_by(RapportIA.date.desc()).limit(1))
+    if r is None:
+        return None
+    return {
+        'date': r.date.isoformat(),
+        'nb_alertes': r.nb_alertes,
+        'synthese': r.synthese,
+        'actions': r.actions,
+        'faits': r.faits,
+        'source': r.source,
+        'modele': r.modele,
+        'mis_a_jour': r.created_at,
+        'du_jour': r.date == dt.date.today(),
     }

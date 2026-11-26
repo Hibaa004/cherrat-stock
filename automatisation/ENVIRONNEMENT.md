@@ -19,13 +19,11 @@
 | Service | Lancement | Port | Rôle dans l'automatisation |
 |---|---|---|---|
 | n8n | Docker (`cherrat_n8n`) | 5678 | Orchestrateur du workflow |
-| API FastAPI | `uvicorn` (PC hôte) | 8000 | Fournit le rapport du stock (`/automation/rapport`) |
+| API FastAPI | `uvicorn` (PC hôte) | 8000 | Fournit les faits du stock et enregistre le rapport du jour (`/automation/...`) |
 | PostgreSQL 16 | Docker (`cherrat_db`) | 5432 | Données du stock |
 | Ollama | Application Windows | 11434 | LLM local qui rédige |
 | Qdrant | Docker (`cherrat_qdrant`) | 6333 | Utilisé par le chatbot de l'application (pas par le workflow) |
-| Frontend React | `npm run dev` | 5173 | Interface web (facultative pour le workflow) |
-| Gmail SMTP | Internet | 465 | Envoi de l'e-mail |
-| Mailpit (facultatif) | Docker (`cherrat_mailpit`, profil `test`) | 1025 / 8025 | Serveur e-mail de test |
+| Frontend React | `npm run dev` | 5173 | Tableau de bord où le personnel lit le rapport |
 
 Le conteneur n8n joint l'API et Ollama via `host.docker.internal` (déclaré par `extra_hosts` dans `docker-compose.yml`).
 
@@ -40,7 +38,7 @@ Le conteneur n8n joint l'API et Ollama via `host.docker.internal` (déclaré par
 
 ### Nœuds n8n (tous intégrés à n8n, aucun nœud communautaire)
 
-Schedule Trigger, Manual Trigger, Set (v3.4), HTTP Request (v4.2), Code (v2), IF (v2), No Operation, Send Email (v2.1), Sticky Note.
+Schedule Trigger, Manual Trigger, Set (v3.4), HTTP Request (v4.2), Code (v2), IF (v2), Sticky Note.
 
 ### Backend Python (`backend/requirements.txt`)
 
@@ -54,7 +52,7 @@ Schedule Trigger, Manual Trigger, Set (v3.4), HTTP Request (v4.2), Code (v2), IF
 | apscheduler 3.x, tzdata | Contrôle quotidien des expirations dans le backend |
 | langchain, langchain-core, langchain-ollama, langchain-qdrant, qdrant-client | Chatbot RAG |
 | numpy 1.26.4, paddlepaddle 2.6.2, paddleocr 2.7.3 | Lecture OCR des dates sur les boîtes |
-| pytest, httpx | Tests automatiques (`python -m pytest`) |
+| pytest, httpx | Tests automatiques (`python -m pytest`, 15 tests) |
 
 ### Frontend (`frontend/package.json`)
 
@@ -62,7 +60,9 @@ react 19, react-dom 19, react-router-dom 7, axios, tailwindcss 4 + @tailwindcss/
 
 ### Images Docker
 
-`postgres:16-alpine`, `qdrant/qdrant:latest`, `n8nio/n8n:latest`, et `axllent/mailpit:latest` (facultatif, profil `test`).
+`postgres:16-alpine`, `qdrant/qdrant:latest`, `n8nio/n8n:latest`.
+
+Aucun service en ligne n'est nécessaire une fois l'installation terminée : tout fonctionne hors connexion.
 
 ## 4. Vérifier l'environnement
 
