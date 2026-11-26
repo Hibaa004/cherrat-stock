@@ -65,7 +65,7 @@ FAITS :
 
 Temps mesuré pour l'appel à Ollama avec llama3.2:3b sur le PC de développement : 20 à 30 secondes.
 
-**Tests réalisés (n8n 2.16.1, 26/11/2026)** : import du JSON par `n8n import:workflow` ; exécution complète avec l'API et Ollama (rapport IA visible sur le tableau de bord du Docteur) ; exécution avec une adresse Ollama injoignable (rapport de repli publié). Tests automatiques du backend : `python -m pytest` (15 tests).
+**Tests réalisés (n8n 2.16.1, 26/11/2026)** : import du JSON par `n8n import:workflow` ; exécution complète avec l'API et Ollama (rapport IA visible sur le tableau de bord du Docteur) ; exécution avec une adresse Ollama injoignable (rapport de repli publié). Tests automatiques du backend : `python -m pytest` (21 tests).
 
 ## 3. Installation sur une nouvelle machine (≈ 45 min, hors téléchargements)
 
