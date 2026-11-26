@@ -35,7 +35,9 @@ app = FastAPI(title='Stock Médicaments - Centre de Santé Cherrat',
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['http://localhost:5173', 'http://localhost:8080'],
+    # Toute page servie en local (localhost ou 127.0.0.1, quel que soit le port :
+    # Vite prend 5174, 5175… si le port 5173 est déjà occupé)
+    allow_origin_regex=r'http://(localhost|127\.0\.0\.1)(:\d+)?',
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
