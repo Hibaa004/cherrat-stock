@@ -28,7 +28,7 @@ Oumaima BOUMAZOUED
 
 **Lien du prototype / workflow fonctionnel**
 
-> ⚠ À COMPLÉTER : lien vers le dépôt GitHub (ou le dossier Google Drive) contenant `cherrat-stock`, avec le workflow `automatisation/workflow_n8n_cherrat.json`. Le dépôt n'a pas encore de remote : il faut le publier (ou déposer un zip sur Drive) et vérifier que le lien est accessible au professeur.
+> https://github.com/Hibaa004/cherrat-stock
 
 **Prototype / Workflow / Autres documents** (envoi de fichiers)
 
@@ -156,7 +156,7 @@ Oumaima BOUMAZOUED
 
 **2.11 — Lien vers un schéma du processus / diagramme de décomposition** (facultatif)
 
-> ⚠ À COMPLÉTER : lien vers `automatisation/architecture.svg` dans le dépôt (ou vers le guide Word, étape 2).
+> https://github.com/Hibaa004/cherrat-stock/blob/main/automatisation/architecture.svg
 
 ---
 
@@ -244,7 +244,7 @@ Oumaima BOUMAZOUED
 
 **3.10 — Lien vers le diagramme d'architecture / workflow** (facultatif)
 
-> ⚠ À COMPLÉTER : lien vers `automatisation/architecture.svg`.
+> https://github.com/Hibaa004/cherrat-stock/blob/main/automatisation/architecture.svg
 
 ---
 
@@ -289,7 +289,7 @@ Oumaima BOUMAZOUED
 
 **5A.1 — Lien vers le tutoriel reproductible**
 
-> ⚠ À COMPLÉTER : lien vers `automatisation/README.md` dans le dépôt (installation en 6 étapes + dépannage), ou vers une version PDF / Google Docs déposée sur Drive avec accès « Tous les utilisateurs disposant du lien ».
+> https://github.com/Hibaa004/cherrat-stock/blob/main/automatisation/README.md
 
 **5A.2 — Le tutoriel contient-il les éléments suivants ?**
 
@@ -368,7 +368,7 @@ Oumaima BOUMAZOUED
 
 **6.8 — Lien vers les preuves / résultats de tests** (facultatif)
 
-> ⚠ À COMPLÉTER : lien vers `images_test_ocr/README.md` dans le dépôt, ou dossier Drive de captures.
+> https://github.com/Hibaa004/cherrat-stock/blob/main/images_test_ocr/README.md
 
 **6.9 — Quelle(s) amélioration(s) avez-vous proposée(s) ou implémentée(s) ?**
 

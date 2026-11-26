@@ -74,7 +74,7 @@ Prérequis : Windows 10/11 (ou macOS/Linux), 8 Go de RAM minimum, Docker Desktop
 ### Étape 1 — Récupérer le projet
 
 ```powershell
-git clone <url-du-depot> cherrat-stock
+git clone https://github.com/Hibaa004/cherrat-stock.git
 cd cherrat-stock
 ```
 
