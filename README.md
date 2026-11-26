@@ -2,7 +2,7 @@
 
 Application web du Centre de Santé Cherrat :
 
-- **Entrée de stock avec OCR** : photo de la boîte → OpenCV + PaddleOCR → date d'expiration proposée → validation humaine.
+- **Entrée de stock avec OCR** : photo de la boîte → OpenCV + PaddleOCR → médicament, n° de lot, date d'expiration et quantité proposés dans le formulaire → validation humaine. Images de test : [images_test_ocr](images_test_ocr/README.md).
 - **Sortie FEFO** : le lot qui expire le plus tôt est utilisé en premier.
 - **Alertes** : contrôle quotidien à 8 h (APScheduler) des lots expirés, des lots qui expirent sous 30 ou 90 jours et des stocks bas. Les lots expirés ne comptent pas dans le stock utilisable.
 - **Assistant IA (chatbot RAG)** : questions en langage naturel → Qdrant + Llama (Ollama, en local).

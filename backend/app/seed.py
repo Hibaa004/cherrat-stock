@@ -7,11 +7,32 @@ from .models import Lot, Medicament, Role, User
 from .security import hash_password
 
 
+# Médicaments ajoutés au catalogue (sans stock) pour tester l'OCR avec images_test_ocr/.
+# L'Ibuprofène 200 mg est volontairement absent : l'OCR doit refuser un dosage inconnu.
+CATALOGUE_SUPPLEMENTAIRE = [
+    dict(nom='Paracétamol 1 g', dci='Paracétamol', forme='Comprimé', dosage='1 g', categorie='Antalgique', seuil_alerte=30),
+    dict(nom='Amoxicilline 500 mg', dci='Amoxicilline', forme='Gélule', dosage='500 mg', categorie='Antibiotique', seuil_alerte=30),
+    dict(nom='Metformine 850 mg', dci='Metformine', forme='Comprimé', dosage='850 mg', categorie='Antidiabétique', seuil_alerte=60),
+    dict(nom='Metformine 500 mg', dci='Metformine', forme='Comprimé', dosage='500 mg', categorie='Antidiabétique', seuil_alerte=60),
+    dict(nom='Oméprazole 20 mg', dci='Oméprazole', forme='Gélule', dosage='20 mg', categorie='Anti-ulcéreux', seuil_alerte=28),
+    dict(nom='Oméprazole 40 mg', dci='Oméprazole', forme='Gélule', dosage='40 mg', categorie='Anti-ulcéreux', seuil_alerte=14),
+]
+
+
+def completer_catalogue(db) -> int:
+    existants = set(db.scalars(select(Medicament.nom)).all())
+    nouveaux = [Medicament(**m) for m in CATALOGUE_SUPPLEMENTAIRE if m['nom'] not in existants]
+    db.add_all(nouveaux)
+    db.commit()
+    return len(nouveaux)
+
+
 def run():
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
         if db.scalar(select(func.count(User.id))):
-            print('Base déjà initialisée')
+            n = completer_catalogue(db)
+            print(f'Base déjà initialisée ; {n} médicament(s) ajouté(s) au catalogue')
             return
         db.add_all(
             [
@@ -51,6 +72,7 @@ def run():
             ]
         )
         db.commit()
+        completer_catalogue(db)
         print('Données de départ créées')
 
 

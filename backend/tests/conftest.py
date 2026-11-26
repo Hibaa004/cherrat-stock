@@ -43,6 +43,8 @@ def db():
 @pytest.fixture
 def client(db, monkeypatch):
     monkeypatch.setattr(settings, 'AUTOMATION_API_KEY', CLE)
+    # pas de réindexation dans le vrai Qdrant pendant les tests
+    monkeypatch.setattr(stock, 'reindex', lambda med_id: None)
     app = FastAPI()
     app.include_router(automation.router)
     app.include_router(stock.router)
