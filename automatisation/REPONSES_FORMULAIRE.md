@@ -423,9 +423,31 @@ Oumaima BOUMAZOUED
 
 > En grande partie, je l'ai réellement automatisée : le contrôle quotidien (parcourir le stock, repérer les lots et les seuils, rédiger la liste des choses à faire) se fait seul chaque matin, alors qu'il prenait plusieurs heures et était souvent repoussé. Une petite partie du travail est déplacée : lire et vérifier le rapport, maintenir l'application et le workflow, et garder des données justes à la source. Mais ce travail est court et régulier, et la surveillance des dates est désormais continue : le bilan est un vrai gain de temps et de sécurité.
 
-**Membre 2 — (tous les champs)**
+**Membre 2 — Nom et prénom**
+> Oumaima BOUMAZOUED
 
-> ⚠ Ces champs sont marqués obligatoires dans le formulaire. Si tu es en binôme, ton binôme écrit sa propre réflexion. Si tu travailles seule, écris « Sans objet — travail individuel ».
+> Brouillon saisi dans le formulaire : **Oumaima doit le relire et le réécrire avec sa propre expérience** avant l'envoi (réflexion individuelle).
+
+**Membre 2 — À propos du problème**
+> J'ai compris que la difficulté n'était pas technique au départ, mais organisationnelle : l'information sur le stock existait (registre, boîtes), mais personne n'avait le temps de la relire chaque jour, et elle dépendait d'une seule personne. Le vrai besoin était donc une information à jour, au bon moment et au bon endroit (le tableau de bord), plutôt qu'un outil de plus à consulter.
+
+**Membre 2 — À propos de l'IA générative**
+> Elle est utile pour reformuler des données brutes en consignes compréhensibles et adaptées à chaque situation, sans écrire un modèle de texte pour chaque cas. En revanche, nos tests ont montré ses limites : même avec un prompt strict, un petit modèle peut se tromper de catégorie (stock bas appelé « rupture ») ou répéter une ligne. Elle convient donc à la rédaction, pas à la décision ni au calcul.
+
+**Membre 2 — À propos de l'ingénierie**
+> Tout ce qui rend le résultat fiable et reproductible : définir les données que l'API doit renvoyer, choisir quelles opérations restent dans le code, gérer le cas où Ollama ne répond pas, tester les cas limites (clé fausse, IA indisponible), et surtout rédiger la documentation (README, credentials, environnement) pour qu'une autre personne puisse installer le workflow sans nous.
+
+**Membre 2 — À propos de la fiabilité**
+> Elle peut échouer quand un service est arrêté (Ollama, backend, Docker), quand le PC est éteint à l'heure prévue, quand la configuration est différente sur une autre machine (adresse localhost dans un conteneur, pare-feu), ou quand le texte de l'IA contient une erreur. C'est pour cela que nous affichons toujours les données calculées et que nous avons prévu une branche de repli.
+
+**Membre 2 — À propos des humains**
+> La lecture critique du rapport, toute décision qui engage le patient ou le budget (retrait d'un lot, commande, prescription) et la correction des données à la source. L'outil doit rester une aide : il signale, mais c'est l'équipe soignante qui reste responsable.
+
+**Membre 2 — À propos de mon apprentissage**
+> J'ai appris à concevoir un workflow avec un déclencheur, des conditions et une gestion d'erreur, à faire communiquer plusieurs services (n8n, API, base de données, LLM local), à tester une automatisation sur des cas normaux et des cas d'échec, et à évaluer honnêtement ses limites au lieu de seulement montrer ce qui marche.
+
+**Membre 2 — Ai-je réellement automatisé la tâche, ou ai-je simplement déplacé le travail ailleurs ? Justifiez.**
+> Oui pour l'essentiel : la préparation quotidienne de la liste des actions ne demande plus aucune intervention. Mais une partie du travail s'est déplacée vers la maintenance (services à lancer, workflow à surveiller) et vers la vérification du rapport. Ce travail est beaucoup plus court que le contrôle manuel, et il est mieux réparti dans l'équipe : le gain est réel, à condition de garder cette vérification.
 
 ---
 
