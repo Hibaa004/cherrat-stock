@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cherrat_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cherrat
+      POSTGRES_PASSWORD: cherrat_pwd
+      POSTGRES_DB: cherrat_stock
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cherrat -d cherrat_stock"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: cherrat_qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: cherrat_n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      GENERIC_TIMEZONE: Africa/Casablanca
+      TZ: Africa/Casablanca
+      N8N_SECURE_COOKIE: "false"
+    extra_hosts:
+      # permet au conteneur de joindre l'API (port 8000) et Ollama (port 11434) lancés sur le PC
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./automatisation:/home/node/automatisation:ro
+
+  # Serveur e-mail de test (facultatif) : docker compose --profile test up -d mailpit
+  # Boîte de réception : http://localhost:8025 ; SMTP pour n8n : host.docker.internal:1025
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: cherrat_mailpit
+    profiles: ["test"]
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  pgdata:
+  qdrant_data:
+  n8n_data:

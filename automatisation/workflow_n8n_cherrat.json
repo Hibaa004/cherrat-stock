@@ -1,0 +1,379 @@
+{
+  "name": "Cherrat Stock - Rapport quotidien IA",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Rapport quotidien du stock — Centre de Santé Cherrat\nDéclencheur (8 h 15) → API FastAPI (faits calculés par le code) → IF alertes → Ollama (rédaction des actions) → e-mail SMTP.\n\nSi Ollama ne répond pas, la branche **Repli sans IA** envoie quand même les données brutes.\n\n**À régler :** nœud *Configuration* + credentials *Cherrat API Key* et *SMTP Cherrat* (voir CREDENTIALS.md).",
+        "height": 220,
+        "width": 520
+      },
+      "id": "98f6ec4b-f318-56bb-bb8d-9cc3c7629968",
+      "name": "Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -300
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8,
+              "triggerAtMinute": 15
+            }
+          ]
+        }
+      },
+      "id": "b4bc62b3-345d-5dba-ac2d-5456cbcf7ce3",
+      "name": "Chaque jour à 8 h 15",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "da5d61a5-32a0-58cc-90f3-909223854980",
+      "name": "Test manuel",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b2488cbf-995f-519f-99d5-5ca4334fe047",
+              "name": "API_URL",
+              "value": "http://host.docker.internal:8000",
+              "type": "string"
+            },
+            {
+              "id": "316cf453-9b42-5bef-b6c4-790b3f8948ff",
+              "name": "OLLAMA_URL",
+              "value": "http://host.docker.internal:11434",
+              "type": "string"
+            },
+            {
+              "id": "84c6d5bc-c695-58bf-b35c-7d602baafef4",
+              "name": "LLM_MODEL",
+              "value": "llama3.2:3b",
+              "type": "string"
+            },
+            {
+              "id": "1da0a3ca-705f-547b-8372-983a4e9d9ad3",
+              "name": "EMAIL_FROM",
+              "value": "votre.adresse@gmail.com",
+              "type": "string"
+            },
+            {
+              "id": "347d1f4c-34f8-535b-a93d-452edc63af63",
+              "name": "EMAIL_TO",
+              "value": "major@exemple.ma, docteur@exemple.ma",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e0b89f0b-3a60-558e-879f-cca0b63ab48a",
+      "name": "Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Configuration').first().json.API_URL }}/automation/rapport",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "8fef7bc4-1d78-565c-b7c0-2301f22714da",
+      "name": "API - Rapport du stock",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "cherratApiKey01",
+          "name": "Cherrat API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Transforme le rapport JSON de l'API en texte lisible + prompt pour le LLM.\nconst r = $input.first().json;\nconst lot = (l) => `- ${l.medicament}, lot ${l.numero_lot} : ${l.quantite} unité(s), expiration le ${l.date_expiration} (` +\n  (l.jours_restants < 0 ? `expiré depuis ${-l.jours_restants} jour(s)` : `${l.jours_restants} jour(s) restants`) + ')';\nconst stock = (s) => `- ${s.medicament} : ${s.stock_utilisable} unité(s) utilisable(s), seuil d'alerte ${s.seuil_alerte}`;\nconst section = (titre, liste, f) => `${titre} (${liste.length}) :\\n` + (liste.length ? liste.map(f).join('\\n') : '- aucun');\n\nconst faits = [\n  `Date du rapport : ${r.date}`,\n  `Médicaments au catalogue : ${r.total_medicaments}`,\n  section('LOTS EXPIRÉS À RETIRER DU STOCK', r.lots_expires, lot),\n  section('LOTS QUI EXPIRENT DANS 30 JOURS OU MOINS', r.lots_sous_30j, lot),\n  section('MÉDICAMENTS EN RUPTURE', r.ruptures, stock),\n  section('MÉDICAMENTS EN STOCK BAS', r.stock_bas, stock),\n  section('LOTS QUI EXPIRENT ENTRE 31 ET 90 JOURS', r.lots_sous_90j, lot),\n].join('\\n\\n');\n\nconst prompt = `Tu es l'assistant de gestion du stock de médicaments du Centre de Santé Cherrat.\nRédige en français la liste des actions du jour pour le Docteur et le Major, à partir des FAITS ci-dessous.\n\nRègles :\n- Utilise UNIQUEMENT les faits fournis. N'invente aucun médicament, aucune quantité, aucune date.\n- Écris uniquement une liste à puces d'actions (une ligne par action, commençant par \"- \"), de la plus urgente à la moins urgente :\n  1) retirer les lots expirés, 2) utiliser en premier les lots qui expirent sous 30 jours, 3) commander les médicaments en rupture, 4) commander les médicaments en stock bas.\n- Chaque ligne cite le médicament, le numéro de lot s'il existe et la quantité, recopiés exactement depuis les faits.\n- Ne mentionne pas les catégories vides. Pas d'introduction ni de conclusion.\n- Aucun conseil médical, de prescription ou de posologie.\n- 120 mots maximum, texte simple, sans tableau ni mise en forme Markdown (pas de ** ni de #).\n\nFAITS :\n${faits}`;\n\n// La synthèse chiffrée est écrite par le code, pas par le LLM (il se trompe en calcul).\nconst synthese = r.nb_alertes === 0\n  ? \"Aucune alerte aujourd'hui.\"\n  : `${r.nb_alertes} alerte(s) à traiter aujourd'hui : ${r.lots_expires.length} lot(s) expiré(s), ` +\n    `${r.lots_sous_30j.length} lot(s) expirant sous 30 jours, ${r.ruptures.length} rupture(s), ${r.stock_bas.length} stock(s) bas.`;\n\nreturn [{ json: { ...r, faits, prompt, synthese } }];\n"
+      },
+      "id": "9d0eef8e-6acd-5379-a0cc-454fd3267817",
+      "name": "Préparer le prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "9a07e6d4-336a-5790-8553-dd100b4502d3",
+              "leftValue": "={{ $json.nb_alertes }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "95832546-0dd2-5547-82e8-769bd982cc1a",
+      "name": "Des alertes ?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        880,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Configuration').first().json.OLLAMA_URL }}/api/generate",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: $('Configuration').first().json.LLM_MODEL, prompt: $json.prompt, stream: false, options: { temperature: 0.1 } }) }}",
+        "options": {
+          "timeout": 180000
+        }
+      },
+      "id": "ed64cd99-5b5c-5697-acea-100eb524edcc",
+      "name": "Ollama - Rédiger les actions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {},
+      "id": "e9966ca9-6479-53b1-8dcb-51e8822f581d",
+      "name": "Rien à signaler",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Met en page la réponse du LLM + les données brutes vérifiables (contrôle humain).\nconst d = $('Préparer le prompt').first().json;\nconst cfg = $('Configuration').first().json;\nconst esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst texte = String($input.first().json.response || '').replace(/\\*\\*/g, '').trim();\nconst html = `<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#1e293b\">\n<h2 style=\"color:#115e59\">Stock Cherrat — rapport du ${d.date}</h2>\n<p><b>${esc(d.synthese)}</b></p>\n<p>Actions prioritaires :</p>\n<p>${esc(texte).replace(/\\n+/g, '<br>')}</p>\n<p style=\"font-size:12px;color:#64748b\">Liste d'actions rédigée par l'IA locale (${esc(cfg.LLM_MODEL)}). Vérifiez-la avec les données ci-dessous avant toute décision.</p>\n<h3>Données calculées par l'application</h3>\n<pre style=\"background:#f1f5f9;padding:12px;border-radius:6px;font-size:12px;white-space:pre-wrap;word-break:break-word\">${esc(d.faits)}</pre>\n</div>`;\nreturn [{ json: { sujet: `Stock Cherrat : ${d.nb_alertes} alerte(s) — ${d.date}`, html, source: 'ia' } }];\n"
+      },
+      "id": "04c931f6-7e5b-5003-8999-23e2334df31e",
+      "name": "Mettre en forme (IA)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        -60
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Repli sans IA : si Ollama ne répond pas, on envoie quand même les données brutes.\nconst d = $('Préparer le prompt').first().json;\nconst esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\nconst html = `<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#1e293b\">\n<h2 style=\"color:#115e59\">Stock Cherrat — rapport du ${d.date}</h2>\n<p><b>${esc(d.synthese)}</b></p>\n<p style=\"color:#b45309\">L'assistant IA (Ollama) n'a pas répondu : voici les données brutes du stock.</p>\n<pre style=\"background:#f1f5f9;padding:12px;border-radius:6px;font-size:12px;white-space:pre-wrap;word-break:break-word\">${esc(d.faits)}</pre>\n</div>`;\nreturn [{ json: { sujet: `Stock Cherrat : ${d.nb_alertes} alerte(s) — ${d.date} (sans IA)`, html, source: 'repli' } }];\n"
+      },
+      "id": "0c396031-5bc5-5c81-b4c0-2a508c120354",
+      "name": "Repli sans IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $('Configuration').first().json.EMAIL_FROM }}",
+        "toEmail": "={{ $('Configuration').first().json.EMAIL_TO }}",
+        "subject": "={{ $json.sujet }}",
+        "emailFormat": "html",
+        "html": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "69c75787-d289-53e3-a829-34e7ebc46aa9",
+      "name": "Envoyer l'e-mail",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1560,
+        40
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "cherratSmtp0001",
+          "name": "SMTP Cherrat"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Chaque jour à 8 h 15": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test manuel": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "API - Rapport du stock",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API - Rapport du stock": {
+      "main": [
+        [
+          {
+            "node": "Préparer le prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Préparer le prompt": {
+      "main": [
+        [
+          {
+            "node": "Des alertes ?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Des alertes ?": {
+      "main": [
+        [
+          {
+            "node": "Ollama - Rédiger les actions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Rien à signaler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama - Rédiger les actions": {
+      "main": [
+        [
+          {
+            "node": "Mettre en forme (IA)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Repli sans IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mettre en forme (IA)": {
+      "main": [
+        [
+          {
+            "node": "Envoyer l'e-mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Repli sans IA": {
+      "main": [
+        [
+          {
+            "node": "Envoyer l'e-mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Africa/Casablanca"
+  },
+  "pinData": {},
+  "tags": []
+}
